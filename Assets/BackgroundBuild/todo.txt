@@ -1,0 +1,5 @@
+- [ ] Input browser URLs for windows
+- [ ] Show errors in notificaitons
+- [ ] Gear icon for settings
+- [ ] Write to log file
+- [ ] See how a different build platform effects background build

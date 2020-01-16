@@ -9,5 +9,7 @@
 # Except for these:
 !/.gitignore
 !/Assets/
+
+/Assets/Plugins/
 !*.unitypackage
 
