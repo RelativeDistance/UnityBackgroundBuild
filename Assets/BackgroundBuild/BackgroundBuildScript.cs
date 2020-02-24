@@ -13,7 +13,7 @@ public class BackgroundBuildScript : EditorWindow
 	private string temporaryFolderPath,buildFolderPath,logFolderPath,webGLURL;
 	private Browsers browser;
 	
-	static string pathToScript;
+	static string pathToScript; 
 	
 	string[] windowsBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
 													  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
