@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a2d70f39e20449d8a3841cb6b73de17, type: 3}
   m_Name: BackgroundBuildSettings
   m_EditorClassIdentifier: 
-  buildTargetSelected: 2
+  buildTargetSelected: 20
   showNotifications: 1
   silentBuild: 1
   launchBuild: 1

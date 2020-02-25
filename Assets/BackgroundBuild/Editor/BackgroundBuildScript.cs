@@ -55,7 +55,7 @@ public class BackgroundBuildScript : EditorWindow
 		string projectName = s[s.Length - 2];
 	
 		pathToScript = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this));
-		pathToScript = pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/Resources/bbuildwindowicon.png";
+		pathToScript = pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/EditorResources/bbuildwindowicon.png";
 			
 		settings = Resources.Load<BackgroundBuildSettings>("BackgroundBuildSettings");
 	}
