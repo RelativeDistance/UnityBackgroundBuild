@@ -7,28 +7,22 @@ using System.IO;
 
 public class BackgroundBuildScript : EditorWindow
 {
-	enum Browsers { Chrome, Firefox, Edge, InternetExplorer, Safari }
 	
-	private BuildTarget buildTargetSelected;
-	private bool showNotifications,launchBuild,logBuild,showLog;
-	private string temporaryFolderPath,buildFolderPath,logFolderPath,webGLURL;
-	private Browsers browser;
+	BackgroundBuildSettings settings;
 	
 	static string pathToScript; 
-	
 	string[] windowsBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
-													  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
-													  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-													  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-													  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"};  
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"};  
 	
 	string[] macBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
-												  "/Applications/Firefox.app/Contents/MacOS/firefox", 
-												  "/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta",
-												  "",
-												  "/Applications/Safari.app/Contents/MacOS/Safari"};  
-	
-	 
+		"/Applications/Firefox.app/Contents/MacOS/firefox", 
+		"/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta",
+		"",
+		"/Applications/Safari.app/Contents/MacOS/Safari"};  
+
 	[MenuItem("Window/Background Build")]
 	static void Init()
 	{
@@ -57,32 +51,17 @@ public class BackgroundBuildScript : EditorWindow
 		string projectName = s[s.Length - 2];
 	
 		pathToScript = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this));
-		pathToScript = pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/EditorResources/bbuildwindowicon.png";
+		pathToScript = pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/Resources/bbuildwindowicon.png";
 			
-		webGLURL = EditorPrefs.GetString("BBS.webGLURL", "http://127.0.0.1");
-		buildFolderPath = EditorPrefs.GetString("BBS.buildFolderPath", dekstopPath + "/" + projectName + "/build");
-		temporaryFolderPath = EditorPrefs.GetString("BBS.temporaryFolderPath", dekstopPath + "/" + projectName + "/temp");
-		showNotifications = EditorPrefs.GetBool("BBS.showNotifications", true);
-		
-		launchBuild = EditorPrefs.GetBool("BBS.launchBuild", true);
-		buildTargetSelected = (BuildTarget)EditorPrefs.GetInt("BBS.buildTargetSelected", (int)BuildTarget.WebGL);
-		
-		logFolderPath = EditorPrefs.GetString("BBS.logFolderPath", dekstopPath + "/" + projectName + "/log");
-		showLog = EditorPrefs.GetBool("BBS.showLog", true);
+		settings = Resources.Load<BackgroundBuildSettings>("BackgroundBuildSettings");
 	}
 	
 	
 	void SaveData()
 	{
-		EditorPrefs.SetString("BBS.webGLURL", webGLURL);
-		EditorPrefs.SetString("BBS.buildFolderPath", buildFolderPath);
-		EditorPrefs.SetString("BBS.temporaryFolderPath", temporaryFolderPath);
-		EditorPrefs.SetBool("BBS.showNotifications", showNotifications);
-		EditorPrefs.SetBool("BBS.launchBuild", launchBuild);
-		EditorPrefs.SetInt("BBS.buildTargetSelected", (int)buildTargetSelected);	
-		EditorPrefs.SetBool("BBS.logBuild", logBuild);
-		EditorPrefs.SetString("BBS.logFolderPath", logFolderPath);
-		EditorPrefs.SetBool("BBS.showLog", showLog);
+		EditorUtility.SetDirty(settings);
+		AssetDatabase.SaveAssets();
+		AssetDatabase.Refresh();
 	}
 	
 	// UI ================================================================
@@ -95,10 +74,10 @@ public class BackgroundBuildScript : EditorWindow
 		guiStyle.padding = new RectOffset( 10, 10, 10, 10 );
 		
 		EditorGUILayout.BeginVertical(guiStyle);
-			buildSettingsGUI();
-			launchSettingsGUI();
-			logSettingsGUI();
-			buildButtonGUI();
+		buildSettingsGUI();
+		launchSettingsGUI();
+		logSettingsGUI();
+		buildButtonGUI();
 		EditorGUILayout.EndVertical();
 	}
 	
@@ -121,41 +100,47 @@ public class BackgroundBuildScript : EditorWindow
 	{
 		GUILayout.Label( "Build Settings" , EditorStyles.boldLabel );
 		EditorGUI.indentLevel++;
-		buildTargetSelected = (BuildTarget)EditorGUILayout.EnumPopup("Build Target", buildTargetSelected);
+		settings.buildTargetSelected = (BuildTarget)EditorGUILayout.EnumPopup("Build Target", settings.buildTargetSelected);
 		
 		EditorGUILayout.BeginHorizontal();
-		EditorGUILayout.TextField("Temporary Folder",temporaryFolderPath,GUILayout.ExpandWidth(true));
+		EditorGUILayout.TextField("Temporary Folder",settings.temporaryFolderPath,GUILayout.ExpandWidth(true));
 		if(GUILayout.Button("Browse",GUILayout.ExpandWidth(false)))
-			temporaryFolderPath = EditorUtility.SaveFolderPanel("Temporary Folder Path",temporaryFolderPath,null) + "/temp";
+			settings.temporaryFolderPath = EditorUtility.SaveFolderPanel("Temporary Folder Path",settings.temporaryFolderPath,null) + "/temp";
 		EditorGUILayout.EndHorizontal();
 		
 		EditorGUILayout.BeginHorizontal();
-		EditorGUILayout.TextField("Build Folder",buildFolderPath,GUILayout.ExpandWidth(true));
+		EditorGUILayout.TextField("Build Folder",settings.buildFolderPath,GUILayout.ExpandWidth(true));
 		if(GUILayout.Button("Browse",GUILayout.ExpandWidth(false)))
-			buildFolderPath = EditorUtility.SaveFolderPanel("Build Folder Path",buildFolderPath,null) + "/build";
+			settings.buildFolderPath = EditorUtility.SaveFolderPanel("Build Folder Path",settings.buildFolderPath,null) + "/build";
 		EditorGUILayout.EndHorizontal();
 		
-		showNotifications = EditorGUILayout.Toggle("Show Notifications",showNotifications);
+		settings.showNotifications = EditorGUILayout.Toggle("Show Notifications",settings.showNotifications);
 	}
 	
 	void launchSettingsGUI()
 	{
-		if ((buildTargetSelected==BuildTarget.WebGL) || 
-		(buildTargetSelected==BuildTarget.StandaloneOSX) || 
-		(buildTargetSelected==BuildTarget.StandaloneWindows) || 
-		(buildTargetSelected==BuildTarget.StandaloneWindows64) || 
-		(buildTargetSelected==BuildTarget.StandaloneLinux64))
+		if ((settings.buildTargetSelected==BuildTarget.WebGL) || 
+		(settings.buildTargetSelected==BuildTarget.StandaloneOSX) || 
+		(settings.buildTargetSelected==BuildTarget.StandaloneWindows) || 
+		(settings.buildTargetSelected==BuildTarget.StandaloneWindows64) || 
+		(settings.buildTargetSelected==BuildTarget.StandaloneLinux64))
 		{
 			
 			GUILayout.Space(10);
 			GUILayout.Label( "Launch Settings" , EditorStyles.boldLabel );
 			
-			launchBuild = EditorGUILayout.Toggle("Launch Build", launchBuild);
-			if (buildTargetSelected==BuildTarget.WebGL)
+			settings.launchBuild = EditorGUILayout.Toggle("Launch Build", settings.launchBuild);
+			
+			if (settings.buildTargetSelected==BuildTarget.WebGL)
 			{
-				EditorGUI.BeginDisabledGroup(launchBuild == false);
-				browser = (Browsers)EditorGUILayout.EnumPopup("Browser", browser);
-				webGLURL = EditorGUILayout.TextField("WebGL URL",webGLURL,GUILayout.ExpandWidth(true));
+				EditorGUI.BeginDisabledGroup(settings.launchBuild  == false);
+				
+				settings.customServer = EditorGUILayout.Toggle("Custom Server", settings.customServer);
+				
+					EditorGUI.BeginDisabledGroup(settings.customServer == false);
+					settings.browser = (BackgroundBuildSettings.Browsers)EditorGUILayout.EnumPopup("Browser", settings.browser);
+					settings.webGLURL = EditorGUILayout.TextField("WebGL URL",settings.webGLURL,GUILayout.ExpandWidth(true));
+					EditorGUI.EndDisabledGroup();	
 				EditorGUI.EndDisabledGroup();	
 			}
 		}
@@ -165,15 +150,15 @@ public class BackgroundBuildScript : EditorWindow
 	{
 		GUILayout.Space(10);
 		GUILayout.Label( "Log Settings" , EditorStyles.boldLabel );
-		logBuild = EditorGUILayout.Toggle("Log Build", logBuild);
-		EditorGUI.BeginDisabledGroup(logBuild == false);
+		settings.logBuild = EditorGUILayout.Toggle("Log Build", settings.logBuild);
+		EditorGUI.BeginDisabledGroup(settings.logBuild == false);
 		EditorGUILayout.BeginHorizontal();
-		EditorGUILayout.TextField("Log Folder",logFolderPath,GUILayout.ExpandWidth(true));
+		EditorGUILayout.TextField("Log Folder",settings.logFolderPath,GUILayout.ExpandWidth(true));
 		if(GUILayout.Button("Browse",GUILayout.ExpandWidth(false)))
-			logFolderPath = EditorUtility.SaveFolderPanel("Log Folder Path",logFolderPath,null) + "/log";
+			settings.logFolderPath = EditorUtility.SaveFolderPanel("Log Folder Path",settings.logFolderPath,null) + "/log";
 		EditorGUILayout.EndHorizontal();
 			
-		showLog = EditorGUILayout.Toggle("Show Log",showLog);
+		settings.showLog = EditorGUILayout.Toggle("Show Log",settings.showLog);
 		EditorGUI.EndDisabledGroup();	
 	}
 	
@@ -192,16 +177,9 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void doReset()
 	{
-		EditorPrefs.DeleteKey("BBS.webGLURL");
-		EditorPrefs.DeleteKey("BBS.buildFolderPath");
-		EditorPrefs.DeleteKey("BBS.temporaryFolderPath");
-		EditorPrefs.DeleteKey("BBS.showNotifications");
-		EditorPrefs.DeleteKey("BBS.launchBuild");
-		EditorPrefs.DeleteKey("BBS.buildTargetSelected");	
-		EditorPrefs.DeleteKey("BBS.logBuild");
-		EditorPrefs.DeleteKey("BBS.logFolderPath");
-		EditorPrefs.DeleteKey("BBS.showLog");
-		OnEnable();
+		settings.reset();
+		SaveData();
+		LoadData();
 	}
 	
 	void showHelp()
@@ -212,51 +190,53 @@ public class BackgroundBuildScript : EditorWindow
 	
 	// BUILD ===========================================================
 	
-	
 	void PerformCopyAndInitSilentUnity()
 	{	
 		
-		FileUtil.DeleteFileOrDirectory( temporaryFolderPath );
-		Directory.CreateDirectory(temporaryFolderPath);
-		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory(), temporaryFolderPath );
-		doProcess(EditorApplication.applicationPath + "/Contents/MacOS/Unity", "-quit -batchmode -projectPath " + temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild"); //
+		FileUtil.DeleteFileOrDirectory( settings.temporaryFolderPath );
+		Directory.CreateDirectory(settings.temporaryFolderPath);
+		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory(), settings.temporaryFolderPath );
+		doProcess(EditorApplication.applicationPath + "/Contents/MacOS/Unity", "-quit -batchmode -projectPath " + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild"); //
 	}
 		
-	[MenuItem("Window/Perform Build")]
 	static void PerformBuild()
 	{
-		NoErrorsValidator();
-		BackgroundBuildScript bbs = BackgroundBuildScript.CreateInstance("BackgroundBuildScript") as BackgroundBuildScript;//new BackgroundBuildScript();
+		BackgroundBuildScript bbs = BackgroundBuildScript.CreateInstance("BackgroundBuildScript") as BackgroundBuildScript;
 		
 		bbs.LoadData();
 		bbs.OnEnable(); // Load the data
 		
-		if (bbs.showNotifications)
+		if (bbs.settings.showNotifications)
 			bbs.showNotification("Unity Build", "Build Started");
 		
 		BuildOptions buildOptions = BuildOptions.None;
-		if (bbs.launchBuild) buildOptions = BuildOptions.AutoRunPlayer;
 		
-		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.buildFolderPath+"/"+Application.productName , bbs.buildTargetSelected, buildOptions);
 		
-		//bbs.showNotification("Unity Build", bbs.launchBuild + " " +bbs.buildTargetSelected);
 		
-		if (bbs.launchBuild)
+		if ((bbs.settings.launchBuild && (!(bbs.settings.buildTargetSelected==BuildTarget.WebGL))) 
+			|| (!bbs.settings.customServer &&  bbs.settings.buildTargetSelected==BuildTarget.WebGL))
 		{
+			buildOptions = BuildOptions.AutoRunPlayer;
 			
-			if (bbs.buildTargetSelected != BuildTarget.WebGL)
+			if (bbs.settings.buildTargetSelected==BuildTarget.StandaloneOSX)
 			{
-				bbs.doProcess(bbs.buildFolderPath+"/"+Application.productName+".app", null);
-				
+				bbs.doProcess(bbs.settings.buildFolderPath+"/"+Application.productName+".app", null);
 			}
-			else
+			else if (bbs.settings.buildTargetSelected==BuildTarget.StandaloneWindows)
 			{
-				bbs.launchBrowserForWebGLBuild();
+				bbs.doProcess(bbs.settings.buildFolderPath+"/"+Application.productName+".exe", null);
 			}
 		}
 		
 		
-		if (bbs.showNotifications)
+		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.settings.buildFolderPath+"/"+Application.productName , bbs.settings.buildTargetSelected, buildOptions);
+		
+		if (bbs.settings.launchBuild && bbs.settings.customServer &&  bbs.settings.buildTargetSelected==BuildTarget.WebGL)
+		{
+			bbs.launchBrowserForWebGLBuild();
+		}
+		
+		if (bbs.settings.showNotifications)
 		{
 			if (report.summary.result == BuildResult.Succeeded)
 			{
@@ -267,25 +247,19 @@ public class BackgroundBuildScript : EditorWindow
 			{
 				bbs.showNotification("Unity Build", "BUILD FAILED - Total build time: " + report.summary.totalTime); 
 			}	
-			
-			
 		}
-		
-		
-		
-		
-    }
+	}
 
 	public void showNotification(string windowTitle, string notificationMessage)
 	{
 		string notificationProgram,notification;
 		
 		#if UNITY_EDITOR_OSX
-			notificationProgram = "osascript";
-			notification = string.Format ("-e 'display notification \"{0}\" with title \"{1}\"'" , notificationMessage ,windowTitle);
+		notificationProgram = "osascript";
+		notification = string.Format ("-e 'display notification \"{0}\" with title \"{1}\"'" , notificationMessage ,windowTitle);
 		#else
-			notificationProgram = "snoretoast";
-			notification = string.Format ("-t {0} -m {1}" , notificationMessage ,windowTitle );
+		notificationProgram = "snoretoast";
+		notification = string.Format ("-t {0} -m {1}" , notificationMessage ,windowTitle );
 		#endif
 		
 		doProcess(notificationProgram, notification);
@@ -296,17 +270,20 @@ public class BackgroundBuildScript : EditorWindow
 		string browserLocation;
 		
 		#if UNITY_EDITOR_OSX
-			browserLocation = macBrowserLocations[(int)browser];
+		browserLocation = macBrowserLocations[(int)settings.browser];
+		
+		//if safari 
+		//open -a Safari URL
+		
 		#else
-			browserLocation = windwsBrowserLocations[(int)browser];
+		browserLocation = windwsBrowserLocations[(int)settings.browser];
 		#endif
 		
-		doProcess(browserLocation, webGLURL);
+		doProcess(browserLocation, settings.webGLURL);
 	}
 	
 	void doProcess(string fileName, string arguments)
 	{
-
 		System.Diagnostics.Process p = new System.Diagnostics.Process();
 		p.StartInfo.FileName = fileName;
 		p.StartInfo.Arguments = arguments; 
@@ -314,18 +291,18 @@ public class BackgroundBuildScript : EditorWindow
 	}
 	
 	
-	static void NoErrorsValidator() 
-	{
-		//if (Application.isBatchMode)
-		CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
-	}
+	//static void NoErrorsValidator() 
+	//{
+	//	//if (Application.isBatchMode)
+	//	CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
+	//}
      
-	private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
-	{
-		CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
-		//Debug.Log(s);
-		//exit on error
-		//EditorApplication.Exit(-1);
-	}
+	//private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
+	//{
+	//	CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
+	//	//Debug.Log(s);
+	//	//exit on error
+	//	//EditorApplication.Exit(-1);
+	//}
 	
 }

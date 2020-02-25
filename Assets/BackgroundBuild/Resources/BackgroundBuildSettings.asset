@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a2d70f39e20449d8a3841cb6b73de17, type: 3}
+  m_Name: BackgroundBuildSettings
+  m_EditorClassIdentifier: 
+  buildTargetSelected: 20
+  showNotifications: 1
+  launchBuild: 1
+  customServer: 1
+  logBuild: 0
+  showLog: 0
+  temporaryFolderPath: /Users/davidpentz/Desktop/UnityBackgroundBuild/temp
+  buildFolderPath: /Users/davidpentz/Desktop/UnityBackgroundBuild/build
+  logFolderPath: /Users/davidpentz/Desktop/UnityBackgroundBuild/log
+  webGLURL: http://127.0.0.1
+  browser: 4
