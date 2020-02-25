@@ -15,7 +15,7 @@ Import the UnityBackgroundBuild.unitypackage.  Then go Window->Background Build 
 Select the platform to build to.  If you are building to a different platform than the one you are working on, highly recommended to be using v2 Asset Pipeline so assets won't have to be reimported.
 
 ### Temporary Folder
-The folder where your project is duplicated to.  Highly recommeneded that you have a fast ssd/nvme drive so this step is as short as possible.
+The folder where your project is duplicated to.  Highly recommeneded that you have a fast ssd/nvme drive so this step is as short as possible.  This folder will be deleted before a new copy takes place, be careful where placing it.
 
 ### Build Folder
 Folder where the project is built to.
@@ -24,12 +24,12 @@ Folder where the project is built to.
 Shows OS level notifications for steps during the build.  Native on Mac, uses snoretoast on Windows.
 
 ### Silent Build
-Build without launching the Unity editor. Should be on most of the time.  Helpful to turn to debug issues.
+Build without launching the Unity editor. Should be on most of the time.  Helpful to turn off to debug issues.
 
 ## Launch Settings
 
 ### Launch Build
-Just like it says will launch the build after completing.  
+Just like it says, will launch the build after completing.  
 
 ### Custom Server (WebGL)
 Turn on if you are running a custom server, if off the standard simple server that Unity uses will launch.
@@ -54,7 +54,3 @@ Show the log after build complete.
 # TODO
 - Show detailed errors in the log.
 - Test other platforms beside WebGL, Windows, and Mac.
-
-
-
-
