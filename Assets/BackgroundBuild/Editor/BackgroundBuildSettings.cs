@@ -12,6 +12,7 @@ public class BackgroundBuildSettings : ScriptableObject
 	
 	public BuildTarget buildTargetSelected = BuildTarget.WebGL;
 	public bool showNotifications = true;
+	public bool silentBuild = true;
 	public bool	launchBuild = true;
 	public bool	customServer = false;
 	public bool	logBuild = false;
@@ -30,20 +31,20 @@ public class BackgroundBuildSettings : ScriptableObject
 		string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
 		string[] s = Application.dataPath.Split('/');
 		string projectName = s[s.Length - 2];
-		if (temporaryFolderPath==null){ temporaryFolderPath = desktopPath + "/" + projectName + "/temp"; }
-		if (buildFolderPath==null){ buildFolderPath = desktopPath + "/" + projectName + "/build"; }
-		if (logFolderPath==null){ logFolderPath = desktopPath + "/" + projectName + "/log";}
+		if (temporaryFolderPath==null){ temporaryFolderPath = desktopPath + "/_" + projectName + "/temp"; }
+		if (buildFolderPath==null){ buildFolderPath = desktopPath + "/_" + projectName + "/build"; }
+		if (logFolderPath==null){ logFolderPath = desktopPath + "/_" + projectName + "/log";}
 	}
 	
 	public void reset()
 	{
-		
 		buildTargetSelected = BuildTarget.WebGL;
 		showNotifications = true;
 		launchBuild = true;
 		customServer = false;
 		logBuild = false;
 		showLog = false;
+		silentBuild = true;
 		temporaryFolderPath = null;
 		buildFolderPath=null;
 		logFolderPath = null;

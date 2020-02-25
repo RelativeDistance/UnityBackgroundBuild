@@ -4,13 +4,15 @@ using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEditor.Compilation;
 using System.IO;
+using System;
 
 public class BackgroundBuildScript : EditorWindow
 {
 	
 	BackgroundBuildSettings settings;
-	
+	bool currentlyCopying = false;
 	static string pathToScript; 
+	
 	string[] windowsBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -19,9 +21,9 @@ public class BackgroundBuildScript : EditorWindow
 	
 	string[] macBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
 		"/Applications/Firefox.app/Contents/MacOS/firefox", 
-		"/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta",
+		"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 		"",
-		"/Applications/Safari.app/Contents/MacOS/Safari"};  
+		"open"};  
 
 	[MenuItem("Window/Background Build")]
 	static void Init()
@@ -30,6 +32,7 @@ public class BackgroundBuildScript : EditorWindow
 		GUIContent titleContent = new GUIContent ("BackgroundBuild", AssetDatabase.LoadAssetAtPath<Texture> (pathToScript));
 		window.titleContent = titleContent;
 		window.Show();
+		window.currentlyCopying = false;
 	}
 	
 	void OnEnable()
@@ -46,6 +49,7 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void LoadData()
 	{
+		
 		string dekstopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
 		string[] s = Application.dataPath.Split('/');
 		string projectName = s[s.Length - 2];
@@ -115,6 +119,7 @@ public class BackgroundBuildScript : EditorWindow
 		EditorGUILayout.EndHorizontal();
 		
 		settings.showNotifications = EditorGUILayout.Toggle("Show Notifications",settings.showNotifications);
+		settings.silentBuild = EditorGUILayout.Toggle("Silent Build",settings.silentBuild);
 	}
 	
 	void launchSettingsGUI()
@@ -165,11 +170,15 @@ public class BackgroundBuildScript : EditorWindow
 	void buildButtonGUI()
 	{
 		GUILayout.Space(10);	
+		EditorGUI.BeginDisabledGroup(currentlyCopying == true);
 		if (GUILayout.Button("BUILD!", GUILayout.Height(40)))
 		{
+			currentlyCopying = true;
 			SaveData();
 			PerformCopyAndInitSilentUnity();
 		}
+		EditorGUI.EndDisabledGroup();	
+		
 	}
 	
 	
@@ -192,32 +201,66 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void PerformCopyAndInitSilentUnity()
 	{	
+
+		if (settings.showNotifications)
+			showNotification("Unity Build", "Copy Started");
+			
+		
+		Directory.CreateDirectory(settings.logFolderPath);
+		if (settings.logBuild) 
+		{
+			writeToLog("---------------------------------------",settings.logFolderPath);
+			writeToLog("Copy Started",settings.logFolderPath);
+		}
+		
 		
 		FileUtil.DeleteFileOrDirectory( settings.temporaryFolderPath );
 		Directory.CreateDirectory(settings.temporaryFolderPath);
+		
+		
+		
 		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory(), settings.temporaryFolderPath );
-		doProcess(EditorApplication.applicationPath + "/Contents/MacOS/Unity", "-quit -batchmode -projectPath " + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild"); //
+		currentlyCopying = false;
+		
+		string cmdLineParams = "-projectPath ";
+		
+		if (settings.silentBuild)
+		{
+			cmdLineParams = "-quit -batchmode " + cmdLineParams;
+		}
+		
+		doProcess(EditorApplication.applicationPath + "/Contents/MacOS/Unity", cmdLineParams + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild");  
 	}
+		
 		
 	static void PerformBuild()
 	{
 		BackgroundBuildScript bbs = BackgroundBuildScript.CreateInstance("BackgroundBuildScript") as BackgroundBuildScript;
 		
 		bbs.LoadData();
-		bbs.OnEnable(); // Load the data
+		bbs.OnEnable(); 
 		
-		if (bbs.settings.showNotifications)
-			bbs.showNotification("Unity Build", "Build Started");
+		if (bbs.settings.showNotifications) bbs.showNotification("Unity Build", "Build Started");
 		
+		if (bbs.settings.logBuild) bbs.writeToLog("Build Started",bbs.settings.logFolderPath);
+			
 		BuildOptions buildOptions = BuildOptions.None;
-		
-		
 		
 		if ((bbs.settings.launchBuild && (!(bbs.settings.buildTargetSelected==BuildTarget.WebGL))) 
 			|| (!bbs.settings.customServer &&  bbs.settings.buildTargetSelected==BuildTarget.WebGL))
 		{
 			buildOptions = BuildOptions.AutoRunPlayer;
-			
+		}
+		
+		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.settings.buildFolderPath+"/"+Application.productName , bbs.settings.buildTargetSelected, buildOptions);
+		
+		if (bbs.settings.launchBuild && bbs.settings.customServer &&  bbs.settings.buildTargetSelected==BuildTarget.WebGL)
+		{
+			bbs.launchBrowserForWebGLBuild();
+		}
+		
+		if (bbs.settings.launchBuild)
+		{
 			if (bbs.settings.buildTargetSelected==BuildTarget.StandaloneOSX)
 			{
 				bbs.doProcess(bbs.settings.buildFolderPath+"/"+Application.productName+".app", null);
@@ -229,24 +272,28 @@ public class BackgroundBuildScript : EditorWindow
 		}
 		
 		
-		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.settings.buildFolderPath+"/"+Application.productName , bbs.settings.buildTargetSelected, buildOptions);
-		
-		if (bbs.settings.launchBuild && bbs.settings.customServer &&  bbs.settings.buildTargetSelected==BuildTarget.WebGL)
-		{
-			bbs.launchBrowserForWebGLBuild();
-		}
+		string message;
 		
 		if (bbs.settings.showNotifications)
 		{
 			if (report.summary.result == BuildResult.Succeeded)
 			{
-				bbs.showNotification("Unity Build", "BUILD SUCCEEDED - Total build time: " + report.summary.totalTime); 
+				message = "BUILD SUCCEEDED - Total build time: " + report.summary.totalTime;
+				bbs.showNotification("Unity Build", message); 
+				if (bbs.settings.logBuild) bbs.writeToLog(message,bbs.settings.logFolderPath);
 			}
 
 			if (report.summary.result == BuildResult.Failed)
 			{
-				bbs.showNotification("Unity Build", "BUILD FAILED - Total build time: " + report.summary.totalTime); 
+				message ="BUILD FAILED - Total build time: " + report.summary.totalTime;
+				bbs.showNotification("Unity Build", message ); 
+				if (bbs.settings.logBuild) bbs.writeToLog(message,bbs.settings.logFolderPath);
 			}	
+		}
+		
+		if (bbs.settings.showLog)
+		{
+				bbs.displayLog(bbs.settings.logFolderPath);
 		}
 	}
 
@@ -268,15 +315,17 @@ public class BackgroundBuildScript : EditorWindow
 	public void launchBrowserForWebGLBuild()
 	{
 		string browserLocation;
-		
+		string url = settings.webGLURL;
 		#if UNITY_EDITOR_OSX
-		browserLocation = macBrowserLocations[(int)settings.browser];
-		
-		//if safari 
-		//open -a Safari URL
-		
+			browserLocation = macBrowserLocations[(int)settings.browser];
+			
+			if (settings.browser==BackgroundBuildSettings.Browsers.Safari)
+			{
+				url = "-a Safari "+url;
+			}
+			
 		#else
-		browserLocation = windwsBrowserLocations[(int)settings.browser];
+			browserLocation = windwsBrowserLocations[(int)settings.browser];
 		#endif
 		
 		doProcess(browserLocation, settings.webGLURL);
@@ -290,19 +339,21 @@ public class BackgroundBuildScript : EditorWindow
 		p.Start();
 	}
 	
+	 void writeToLog(string line, string path)
+	{
+		StreamWriter writer = new StreamWriter(path+"/BackgroundBuildLog.txt", true);
+		writer.WriteLine(DateTime.Now +" " +line);
+		writer.Close();
+	}
 	
-	//static void NoErrorsValidator() 
-	//{
-	//	//if (Application.isBatchMode)
-	//	CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
-	//}
-     
-	//private static void ProcessBatchModeCompileFinish(string s, CompilerMessage[] compilerMessages)
-	//{
-	//	CompilationPipeline.assemblyCompilationFinished += ProcessBatchModeCompileFinish;
-	//	//Debug.Log(s);
-	//	//exit on error
-	//	//EditorApplication.Exit(-1);
-	//}
+	public void displayLog(string path)
+	{
+		#if UNITY_EDITOR_OSX
+			doProcess("open", path+"/BackgroundBuildLog.txt");
+		#else
+		doProcess("explorer", path+"/BackgroundBuildLog.txt");
+		#endif
+	}
+	
 	
 }
