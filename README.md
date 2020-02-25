@@ -7,7 +7,7 @@ Fire off a background build of your Unity project and continue working on the sa
 After applying your settings and pressing build, this plugin duplicates your entire current project, and then runs a batch mode build using the current settings and scene list.  Optionaly it launches the build when complete and logs everything.  
 
 # Installation
-Import the [UnityBackgroundBuild.unitypackage](Assets/UnityBackgroundBuild.unitypackage).  Then go Window->Background Build to open the editor window.  The following options are prensented.
+Import the [UnityBackgroundBuild.unitypackage](https://github.com/RelativeDistance/UnityBackgroundBuild/raw/master/Assets/UnityBackgroundBuild.unitypackage).  Then go Window->Background Build to open the editor window.  The following options are prensented.
 
 ## Build Settings
 
