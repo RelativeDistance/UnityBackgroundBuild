@@ -12,18 +12,14 @@ public class BackgroundBuildScript : EditorWindow
 	BackgroundBuildSettings settings;
 	bool currentlyCopying = false;
 	static string pathToScript; 
-	
-	string[] windowsBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"};  
-	
-	string[] macBrowserLocations = new string[] { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
-		"/Applications/Firefox.app/Contents/MacOS/firefox", 
-		"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-		"",
-		"open"};  
+
+	string[] windowsBrowserLocations = new string[] { "chrome ", "firefox ", "microsoft-edge:", "iexplore ","Safari Not Available on Windows"};  
+	string[] macBrowserLocations = new string[] { 
+													"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
+													"/Applications/Firefox.app/Contents/MacOS/firefox", 
+													"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+													"Internet Explore Not Available on Mac",
+													"open"};  
 
 	[MenuItem("Window/Background Build")]
 	static void Init()
@@ -142,10 +138,10 @@ public class BackgroundBuildScript : EditorWindow
 				
 				settings.customServer = EditorGUILayout.Toggle("Custom Server", settings.customServer);
 				
-					EditorGUI.BeginDisabledGroup(settings.customServer == false);
-					settings.browser = (BackgroundBuildSettings.Browsers)EditorGUILayout.EnumPopup("Browser", settings.browser);
-					settings.webGLURL = EditorGUILayout.TextField("WebGL URL",settings.webGLURL,GUILayout.ExpandWidth(true));
-					EditorGUI.EndDisabledGroup();	
+				EditorGUI.BeginDisabledGroup(settings.customServer == false);
+				settings.browser = (BackgroundBuildSettings.Browsers)EditorGUILayout.EnumPopup("Browser", settings.browser);
+				settings.webGLURL = EditorGUILayout.TextField("WebGL URL",settings.webGLURL,GUILayout.ExpandWidth(true));
+				EditorGUI.EndDisabledGroup();	
 				EditorGUI.EndDisabledGroup();	
 			}
 		}
@@ -186,6 +182,7 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void doReset()
 	{
+		currentlyCopying = false;
 		settings.reset();
 		SaveData();
 		LoadData();
@@ -217,9 +214,10 @@ public class BackgroundBuildScript : EditorWindow
 		FileUtil.DeleteFileOrDirectory( settings.temporaryFolderPath );
 		Directory.CreateDirectory(settings.temporaryFolderPath);
 		
-		
-		
-		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory(), settings.temporaryFolderPath );
+		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory()+"/Assets", settings.temporaryFolderPath+"/Assets" );
+		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory()+"/Library", settings.temporaryFolderPath+"/Library" );
+		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory()+"/Packages", settings.temporaryFolderPath+"/Packages" );
+		FileUtil.ReplaceDirectory(System.IO.Directory.GetCurrentDirectory()+"/ProjectSettings", settings.temporaryFolderPath+"/ProjectSettings" );
 		currentlyCopying = false;
 		
 		string cmdLineParams = "-projectPath ";
@@ -228,8 +226,14 @@ public class BackgroundBuildScript : EditorWindow
 		{
 			cmdLineParams = "-quit -batchmode " + cmdLineParams;
 		}
+	
 		
+		#if UNITY_EDITOR_OSX
 		doProcess(EditorApplication.applicationPath + "/Contents/MacOS/Unity", cmdLineParams + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild");  
+		#else
+		doProcess(EditorApplication.applicationPath, cmdLineParams + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild");  
+		#endif
+		
 	}
 		
 		
@@ -252,7 +256,14 @@ public class BackgroundBuildScript : EditorWindow
 			buildOptions = BuildOptions.AutoRunPlayer;
 		}
 		
-		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.settings.buildFolderPath+"/"+Application.productName , bbs.settings.buildTargetSelected, buildOptions);
+		string productName = Application.productName;
+		
+		#if UNITY_EDITOR_WIN
+		if ((bbs.settings.buildTargetSelected == BuildTarget.StandaloneWindows) || (bbs.settings.buildTargetSelected == BuildTarget.StandaloneWindows64))
+		productName = productName + ".exe";
+		#endif
+		
+		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.settings.buildFolderPath+"/"+productName , bbs.settings.buildTargetSelected, buildOptions);
 		
 		if (bbs.settings.launchBuild && bbs.settings.customServer &&  bbs.settings.buildTargetSelected==BuildTarget.WebGL)
 		{
@@ -293,7 +304,7 @@ public class BackgroundBuildScript : EditorWindow
 		
 		if (bbs.settings.showLog)
 		{
-				bbs.displayLog(bbs.settings.logFolderPath);
+			bbs.displayLog(bbs.settings.logFolderPath);
 		}
 	}
 
@@ -305,10 +316,10 @@ public class BackgroundBuildScript : EditorWindow
 		notificationProgram = "osascript";
 		notification = string.Format ("-e 'display notification \"{0}\" with title \"{1}\"'" , notificationMessage ,windowTitle);
 		#else
-		notificationProgram = "snoretoast";
-		notification = string.Format ("-t {0} -m {1}" , notificationMessage ,windowTitle );
+		notificationProgram = Application.dataPath.Replace("/Assets","") + "/" +pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/snoretoast.exe";
+		string iconPath = Application.dataPath.Replace("/Assets","") + "/" +pathToScript.Substring(0, pathToScript.LastIndexOf('/'))+"/ToastIcon.png";
+		notification = string.Format ("-t \"{0}\" -m \"{1}\" -silent -p \"{2}\" -appID Snore.DesktopToasts.0.7.0" , notificationMessage ,windowTitle, iconPath );
 		#endif
-		
 		doProcess(notificationProgram, notification);
 	}
 	 
@@ -317,18 +328,21 @@ public class BackgroundBuildScript : EditorWindow
 		string browserLocation;
 		string url = settings.webGLURL;
 		#if UNITY_EDITOR_OSX
-			browserLocation = macBrowserLocations[(int)settings.browser];
+		browserLocation = macBrowserLocations[(int)settings.browser];
 			
-			if (settings.browser==BackgroundBuildSettings.Browsers.Safari)
-			{
-				url = "-a Safari "+url;
-			}
+		if (settings.browser==BackgroundBuildSettings.Browsers.Safari)
+		{
+			url = "-a Safari "+url;
+		}
+			
+		doProcess(browserLocation, settings.webGLURL);
 			
 		#else
-			browserLocation = windwsBrowserLocations[(int)settings.browser];
+		browserLocation = windowsBrowserLocations[(int)settings.browser];
+		doProcess("cmd.exe", "/C start "+browserLocation + settings.webGLURL);
 		#endif
 		
-		doProcess(browserLocation, settings.webGLURL);
+		
 	}
 	
 	void doProcess(string fileName, string arguments)
@@ -339,7 +353,7 @@ public class BackgroundBuildScript : EditorWindow
 		p.Start();
 	}
 	
-	 void writeToLog(string line, string path)
+	void writeToLog(string line, string path)
 	{
 		StreamWriter writer = new StreamWriter(path+"/BackgroundBuildLog.txt", true);
 		writer.WriteLine(DateTime.Now +" " +line);
@@ -349,9 +363,9 @@ public class BackgroundBuildScript : EditorWindow
 	public void displayLog(string path)
 	{
 		#if UNITY_EDITOR_OSX
-			doProcess("open", path+"/BackgroundBuildLog.txt");
+		doProcess("open", path+"/BackgroundBuildLog.txt");
 		#else
-		doProcess("explorer", path+"/BackgroundBuildLog.txt");
+		doProcess("explorer.exe", path+"/BackgroundBuildLog.txt");
 		#endif
 	}
 	
