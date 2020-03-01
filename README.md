@@ -52,6 +52,7 @@ Location of log text file.
 Show the log after build complete.
 
 ## TODO
+- Only copy changed files.
 - Show detailed errors in the log.
 - Test other platforms besides WebGL, Windows, and Mac. May or may not work with other platforms.
 - Needs testing of special characters in paths.
