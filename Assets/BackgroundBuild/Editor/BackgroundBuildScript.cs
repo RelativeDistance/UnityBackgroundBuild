@@ -8,19 +8,21 @@ using System;
 
 public class BackgroundBuildScript : EditorWindow
 {
-	
 	BackgroundBuildSettings settings;
 	bool currentlyCopying = false;
 	static string pathToScript; 
 
-	string[] windowsBrowserLocations = new string[] { "chrome ", "firefox ", "microsoft-edge:", "iexplore ","Safari Not Available on Windows"};  
-	string[] macBrowserLocations = new string[] { 
+	string[] windowsBrowsers = new string[] { "chrome ", "firefox ", "microsoft-edge:", "iexplore ","Safari Not Available on Windows"};  
+	string[] macBrowsers = new string[] { 
 													"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", 
 													"/Applications/Firefox.app/Contents/MacOS/firefox", 
 													"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 													"Internet Explore Not Available on Mac",
-													"open"};  
-
+													"open" //safari works a little differently when opening from command line
+												};  
+													
+	string logFilename = "Background-Build-Log.txt";
+	
 	[MenuItem("Window/Background Build")]
 	static void Init()
 	{
@@ -45,7 +47,6 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void LoadData()
 	{
-		
 		string dekstopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
 		string[] s = Application.dataPath.Split('/');
 		string projectName = s[s.Length - 2];
@@ -177,7 +178,6 @@ public class BackgroundBuildScript : EditorWindow
 		
 	}
 	
-	
 	// Settings Menu ==================================================
 	
 	void doReset()
@@ -193,7 +193,6 @@ public class BackgroundBuildScript : EditorWindow
 		Application.OpenURL("https://github.com/RelativeDistance/UnityBackgroundBuild");	
 	}
 	
-	
 	// BUILD ===========================================================
 	
 	void PerformCopyAndInitSilentUnity()
@@ -202,14 +201,12 @@ public class BackgroundBuildScript : EditorWindow
 		if (settings.showNotifications)
 			showNotification("Unity Build", "Copy Started");
 			
-		
-		Directory.CreateDirectory(settings.logFolderPath);
 		if (settings.logBuild) 
 		{
+			Directory.CreateDirectory(settings.logFolderPath);
 			writeToLog("---------------------------------------",settings.logFolderPath);
 			writeToLog("Copy Started",settings.logFolderPath);
 		}
-		
 		
 		FileUtil.DeleteFileOrDirectory( settings.temporaryFolderPath );
 		Directory.CreateDirectory(settings.temporaryFolderPath);
@@ -227,15 +224,14 @@ public class BackgroundBuildScript : EditorWindow
 			cmdLineParams = "-quit -batchmode " + cmdLineParams;
 		}
 	
+		string unityPath = EditorApplication.applicationPath;
 		
 		#if UNITY_EDITOR_OSX
-		doProcess(EditorApplication.applicationPath + "/Contents/MacOS/Unity", cmdLineParams + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild");  
-		#else
-		doProcess(EditorApplication.applicationPath, cmdLineParams + settings.temporaryFolderPath + " -executeMethod BackgroundBuildScript.PerformBuild");  
+			unityPath += "/Contents/MacOS/Unity";
 		#endif
 		
+		doProcess(unityPath, cmdLineParams + "\"" +settings.temporaryFolderPath + "\" -executeMethod BackgroundBuildScript.PerformBuild");  
 	}
-		
 		
 	static void PerformBuild()
 	{
@@ -259,8 +255,8 @@ public class BackgroundBuildScript : EditorWindow
 		string productName = Application.productName;
 		
 		#if UNITY_EDITOR_WIN
-		if ((bbs.settings.buildTargetSelected == BuildTarget.StandaloneWindows) || (bbs.settings.buildTargetSelected == BuildTarget.StandaloneWindows64))
-		productName = productName + ".exe";
+			if ((bbs.settings.buildTargetSelected == BuildTarget.StandaloneWindows) || (bbs.settings.buildTargetSelected == BuildTarget.StandaloneWindows64))
+			productName = productName + ".exe";
 		#endif
 		
 		BuildReport report = BuildPipeline.BuildPlayer(EditorBuildSettings.scenes, bbs.settings.buildFolderPath+"/"+productName , bbs.settings.buildTargetSelected, buildOptions);
@@ -270,7 +266,7 @@ public class BackgroundBuildScript : EditorWindow
 			bbs.launchBrowserForWebGLBuild();
 		}
 		
-		if (bbs.settings.launchBuild)
+		if ((bbs.settings.launchBuild) && !(bbs.settings.buildTargetSelected==BuildTarget.WebGL))
 		{
 			if (bbs.settings.buildTargetSelected==BuildTarget.StandaloneOSX)
 			{
@@ -283,23 +279,21 @@ public class BackgroundBuildScript : EditorWindow
 		}
 		
 		
-		string message;
 		
 		if (bbs.settings.showNotifications)
 		{
+			string message = "";
 			if (report.summary.result == BuildResult.Succeeded)
 			{
 				message = "BUILD SUCCEEDED - Total build time: " + report.summary.totalTime;
-				bbs.showNotification("Unity Build", message); 
-				if (bbs.settings.logBuild) bbs.writeToLog(message,bbs.settings.logFolderPath);
 			}
-
-			if (report.summary.result == BuildResult.Failed)
+			else if (report.summary.result == BuildResult.Failed)
 			{
-				message ="BUILD FAILED - Total build time: " + report.summary.totalTime;
-				bbs.showNotification("Unity Build", message ); 
-				if (bbs.settings.logBuild) bbs.writeToLog(message,bbs.settings.logFolderPath);
+				message ="BUILD FAILED - Total build time: " + report.summary.totalTime;	
 			}	
+			
+			bbs.showNotification("Unity Build", message ); 
+			if (bbs.settings.logBuild) bbs.writeToLog(message,bbs.settings.logFolderPath);
 		}
 		
 		if (bbs.settings.showLog)
@@ -313,12 +307,12 @@ public class BackgroundBuildScript : EditorWindow
 		string notificationProgram,notification;
 		
 		#if UNITY_EDITOR_OSX
-		notificationProgram = "osascript";
-		notification = string.Format ("-e 'display notification \"{0}\" with title \"{1}\"'" , notificationMessage ,windowTitle);
+			notificationProgram = "osascript";
+			notification = string.Format ("-e 'display notification \"{0}\" with title \"{1}\"'" , notificationMessage ,windowTitle);
 		#else
-		notificationProgram = Application.dataPath.Replace("/Assets","") + "/" +pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/snoretoast.exe";
-		string iconPath = Application.dataPath.Replace("/Assets","") + "/" +pathToScript.Substring(0, pathToScript.LastIndexOf('/'))+"/ToastIcon.png";
-		notification = string.Format ("-t \"{0}\" -m \"{1}\" -silent -p \"{2}\" -appID Snore.DesktopToasts.0.7.0" , notificationMessage ,windowTitle, iconPath );
+			notificationProgram = Application.dataPath.Replace("/Assets","") + "/" +pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/snoretoast.exe";
+			string iconPath = Application.dataPath.Replace("/Assets","") + "/" +pathToScript.Substring(0, pathToScript.LastIndexOf('/'))+"/ToastIcon.png";
+			notification = string.Format ("-t \"{0}\" -m \"{1}\" -silent -p \"{2}\" -appID Snore.DesktopToasts.0.7.0" , notificationMessage ,windowTitle, iconPath );
 		#endif
 		doProcess(notificationProgram, notification);
 	}
@@ -328,7 +322,7 @@ public class BackgroundBuildScript : EditorWindow
 		string browserLocation;
 		string url = settings.webGLURL;
 		#if UNITY_EDITOR_OSX
-		browserLocation = macBrowserLocations[(int)settings.browser];
+		browserLocation = macBrowsers[(int)settings.browser];
 			
 		if (settings.browser==BackgroundBuildSettings.Browsers.Safari)
 		{
@@ -338,11 +332,10 @@ public class BackgroundBuildScript : EditorWindow
 		doProcess(browserLocation, settings.webGLURL);
 			
 		#else
-		browserLocation = windowsBrowserLocations[(int)settings.browser];
-		doProcess("cmd.exe", "/C start "+browserLocation + settings.webGLURL);
+			browserLocation = windowsBrowsers[(int)settings.browser];
+			doProcess("cmd.exe", "/C start "+browserLocation + settings.webGLURL);
 		#endif
-		
-		
+
 	}
 	
 	void doProcess(string fileName, string arguments)
@@ -355,7 +348,7 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void writeToLog(string line, string path)
 	{
-		StreamWriter writer = new StreamWriter(path+"/BackgroundBuildLog.txt", true);
+		StreamWriter writer = new StreamWriter(path+"/"+logFilename, true);
 		writer.WriteLine(DateTime.Now +" " +line);
 		writer.Close();
 	}
@@ -363,9 +356,9 @@ public class BackgroundBuildScript : EditorWindow
 	public void displayLog(string path)
 	{
 		#if UNITY_EDITOR_OSX
-		doProcess("open", path+"/BackgroundBuildLog.txt");
+			doProcess("open", "\""+path+"/"+logFilename+"\"");
 		#else
-		doProcess("explorer.exe", path+"/BackgroundBuildLog.txt");
+			doProcess("explorer.exe", path+"/"+logFilename);
 		#endif
 	}
 	

@@ -17,8 +17,8 @@ MonoBehaviour:
   silentBuild: 1
   launchBuild: 1
   customServer: 0
-  logBuild: 1
-  showLog: 1
+  logBuild: 0
+  showLog: 0
   temporaryFolderPath: /Users/davidpentz/Desktop/_UnityBackgroundBuild/temp
   buildFolderPath: /Users/davidpentz/Desktop/_UnityBackgroundBuild/build
   logFolderPath: /Users/davidpentz/Desktop/_UnityBackgroundBuild/log

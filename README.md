@@ -24,7 +24,7 @@ Folder where the project is built to.
 Shows OS level notifications for steps during the build.  Native on Mac, uses [Snoretoast](https://github.com/KDE/snoretoast) on Windows.
 
 #### Silent Build
-Build without launching the Unity editor. Should be on most of the time.  Helpful to turn off to debug issues.
+Build without launching the Unity editor. Should be on most of the time.  Helpful to turn off to debug issues.  Be careful because this will open up a new Unity editor that will look identical to the original, so keep tabs of which project you are working in.
 
 ## Launch Settings
 
@@ -51,8 +51,9 @@ Location of log text file.
 #### Show Log
 Show the log after build complete.
 
-# TODO
+## TODO
 - Show detailed errors in the log.
-- Test other platforms beside WebGL, Windows, and Mac.
-- Needs testing of special characters and spaces in paths.
- 
+- Test other platforms beside WebGL, Windows, and Mac. May or may not work with other platforms.
+- Needs testing of special characters in paths.
+- Allow the use of Unity Package Maanger.
+
