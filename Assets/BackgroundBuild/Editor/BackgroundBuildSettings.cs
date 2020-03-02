@@ -28,12 +28,12 @@ public class BackgroundBuildSettings : ScriptableObject
 	
 	void init()
 	{
-		string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
+		string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop).Replace('\\','/');
 		string[] s = Application.dataPath.Split('/');
 		string projectName = s[s.Length - 2];
-		if (temporaryFolderPath==null){ temporaryFolderPath = desktopPath + "/_" + projectName + "/temp"; }
-		if (buildFolderPath==null){ buildFolderPath = desktopPath + "/_" + projectName + "/build"; }
-		if (logFolderPath==null){ logFolderPath = desktopPath + "/_" + projectName + "/log";}
+		if (string.IsNullOrEmpty(temporaryFolderPath)){ temporaryFolderPath = desktopPath + "/_" + projectName + "/temp"; }
+		if (string.IsNullOrEmpty(buildFolderPath)){ buildFolderPath = desktopPath + "/_" + projectName + "/build"; }
+		if (string.IsNullOrEmpty(logFolderPath)){ logFolderPath = desktopPath + "/_" + projectName + "/log";}
 	}
 	
 	public void reset()

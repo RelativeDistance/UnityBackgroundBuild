@@ -19,8 +19,8 @@ MonoBehaviour:
   customServer: 0
   logBuild: 0
   showLog: 0
-  temporaryFolderPath: /Users/davidpentz/Desktop/_UnityBackgroundBuild/temp
-  buildFolderPath: /Users/davidpentz/Desktop/_UnityBackgroundBuild/build
-  logFolderPath: /Users/davidpentz/Desktop/_UnityBackgroundBuild/log
+  temporaryFolderPath: 
+  buildFolderPath: 
+  logFolderPath: 
   webGLURL: http://127.0.0.1/
   browser: 0

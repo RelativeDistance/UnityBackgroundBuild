@@ -47,12 +47,19 @@ public class BackgroundBuildScript : EditorWindow
 	
 	void LoadData()
 	{
-		string dekstopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
+		string dekstopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop).Replace('\\','/');
 		string[] s = Application.dataPath.Split('/');
 		string projectName = s[s.Length - 2];
 	
 		pathToScript = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this));
-		pathToScript = pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/EditorResources/bbuildwindowicon.png";
+		
+		string iconFilename = "bbuildwindowicon_light.png";
+		if (EditorGUIUtility.isProSkin)
+		{
+			iconFilename = "bbuildwindowicon_dark.png";
+		}
+		
+		pathToScript = pathToScript.Substring(0, pathToScript.LastIndexOf('/')) + "/EditorResources/" + iconFilename;
 			
 		settings = Resources.Load<BackgroundBuildSettings>("BackgroundBuildSettings");
 	}
@@ -358,7 +365,7 @@ public class BackgroundBuildScript : EditorWindow
 		#if UNITY_EDITOR_OSX
 			doProcess("open", "\""+path+"/"+logFilename+"\"");
 		#else
-			doProcess("explorer.exe", path+"/"+logFilename);
+			doProcess("cmd.exe", "/C \""+path+"/"+logFilename+"\"");
 		#endif
 	}
 	
